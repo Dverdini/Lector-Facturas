@@ -1,0 +1,142 @@
+import os
+ejemplo_dir = '/Users/Damian/Desktop/Facturas' #Poner la direccion donde esten las facturas (.pdf) y el archivo excel
+contenido = os.listdir(ejemplo_dir)
+pdf = []
+for fichero in contenido:
+    if os.path.isfile(os.path.join(ejemplo_dir, fichero)) and fichero.endswith('.pdf'):
+        pdf.append(fichero)
+
+print("Estas son las facturas:")
+print(pdf)
+print("Estas son las cantidades:")
+print(len(pdf))
+
+
+
+#print(text) #fijarse aca que numero de fila se necesita
+proveedores=[]
+fechadeemision=[]
+cuit=[]
+nfactura1=[]
+nfactura2=[]
+destinatario=[]
+detalle=[]
+importefactura=[]
+
+import fitz
+for facturas in pdf:
+    x=facturas
+    pdf_documento=x
+    documento = fitz.open(pdf_documento)
+    pagina = documento.loadPage(0)
+    text=pagina.getText("block")
+    
+#proveedor
+    #print(text.splitlines()[2]) #proveedor
+    proveedores.append(text.splitlines()[2])
+
+#fecha de emision 
+    #print(text.splitlines()[11]) #Fecha de emisión
+    #fechadeemision.append(text.splitlines()[11])
+    texto2 = text.splitlines()[0:len(text.splitlines())]
+    e=texto2.index("Domicilio:")+4
+    fechadeemision.append(text.splitlines()[e])
+
+#cuit    
+    #print(text.splitlines()[15]) #CUIT proveedor
+    #cuit.append(text.splitlines()[15])
+    c=texto2.index("Domicilio:")+5
+    cuit.append(text.splitlines()[c])
+
+#N° factura
+    #print(text.splitlines()[22]) #N° Factura
+    #nfactura1.append(text.splitlines()[22])
+    f=texto2.index("Comp. Nro:")+1
+    nfactura1.append(text.splitlines()[f])
+
+#N° factura    
+    #print(text.splitlines()[23]) #N° Factura
+    #nfactura2.append(text.splitlines()[23])
+    ff=texto2.index("Comp. Nro:")+2
+    nfactura2.append(text.splitlines()[ff])
+
+#destinatario
+    #linea para buscar proveedor:
+    if texto2.index("Código") == 39: #39 para facturas con datos del cuit #37 sin datos
+        m=texto2.index("Código")-22
+        destinatario.append(text.splitlines()[m])
+    else:
+        m=texto2.index("Código")-1
+        destinatario.append(text.splitlines()[m])
+        
+#detalle     
+    #print(text.splitlines()[45]) #1° linea del detalle
+    detalle.append(text.splitlines()[45])
+
+#importe
+    #print(text.splitlines()[-12]) #Importe $ total de la factura
+    importefactura.append(text.splitlines()[-12])
+    #print("    XXX   ")
+
+
+
+
+print(proveedores)
+print(fechadeemision)
+print(cuit)
+print(nfactura1)
+print(nfactura2)
+print(destinatario)
+print(detalle)
+print(importefactura)
+
+
+import xlwings as xw
+#from xlwings import constants
+import pandas as pd
+
+
+filas = 0
+wb = xw.Book('facturas.xlsx')
+hoja = wb.sheets('facturas')
+
+hoja.range('A2:H2').api.Font.Bold = True 
+hoja.range("A2:H2").color = xw.utils.rgb_to_int((220, 220, 220))
+hoja.range("A2").value = "PROVEEDOR"
+hoja.range("B2").value = "FECHA"
+hoja.range("C2").value = "CUIT"
+hoja.range("D2").value = "FACTURA1"
+hoja.range("E2").value = "FACTURA2"
+hoja.range("F2").value = "DESTINATARIO"
+hoja.range("G2").value = "DETALLE"
+hoja.range("H2").value = "IMPORTE"
+tabla = pd.DataFrame()
+tabla["proveedores"] = proveedores
+tabla["fechadeemision"] = fechadeemision
+tabla["cuit"] = cuit
+tabla["nfactura1"] = nfactura1
+tabla["nfactura2"] = nfactura2
+tabla["destinatario"] = destinatario
+tabla["detalle"] = detalle
+tabla["importefactura"] = importefactura
+
+
+
+
+while True:
+    filas = 1
+    filas = filas + 1    
+        
+    
+    for i in range(0, len(proveedores)):
+        filas = filas + 1
+        hoja.range("A"+str(filas)).value = proveedores[i]
+        hoja.range("B"+str(filas)).value = fechadeemision[i]
+        hoja.range("C"+str(filas)).value = cuit[i]
+        hoja.range("D"+str(filas)).value = nfactura1[i]
+        hoja.range("E"+str(filas)).value = nfactura2[i]
+        hoja.range("F"+str(filas)).value = destinatario[i]
+        hoja.range("G"+str(filas)).value = detalle[i]
+        hoja.range("H"+str(filas)).value = importefactura[i]
+    break
+  
